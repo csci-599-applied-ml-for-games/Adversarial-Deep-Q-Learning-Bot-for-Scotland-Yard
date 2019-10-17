@@ -1,0 +1,4 @@
+include README COPYING MANIFEST.in
+recursive-include londonlaw/guiclient/images *.jpg *.png
+recursive-include londonlaw/locale *
+recursive-include doc *
