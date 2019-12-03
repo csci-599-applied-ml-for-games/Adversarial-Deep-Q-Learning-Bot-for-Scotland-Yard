@@ -21,6 +21,7 @@ from twisted.internet import protocol
 from twisted.python import log
 from londonlaw.aiclients import base
 from londonlaw.common import path
+import detectives_dqn
 
 
 class DetectiveSimpleAIProtocolError(Exception):
@@ -96,121 +97,13 @@ class DetectiveSimpleAIProtocol(base.BaseAIProtocol):
       if(self._pawns[pawnName]._name == "Black"):
          feature_vector.append(5)
       log.msg("Input feature vector: ", feature_vector)
-      # mrXLoc_vector = self.one_hot_encode([mrXLoc], 1, 199)
-      # mrXTickets = self._pawns['X']._tickets
-      # mrXTickets_vector = mrXTickets.values()
-      # dets      = ['Red', 'Yellow', 'Green', 'Blue', 'Black']
-      # detLocs   = [self._pawns[d].getLocation() for d in dets]
-      # detLocs_vector = self.one_hot_encode(detLocs, 5, 199)
-      # det_tickets = [self._pawns[d]._tickets for d in dets]
-      # det_tickets_vector = [d.values() for d in det_tickets]
-      # turn_number = self._turnNum
-      # # feature_vector = [mrXLoc_vector, mrXTickets_vector, detLocs_vector, det_tickets_vector, turn_number]
-      # feature_vector = []
-      # feature_vector.extend(mrXLoc_vector)
-      # feature_vector.extend(mrXTickets_vector)
-      # feature_vector.extend(detLocs_vector)
-      # feature_vector.extend(det_tickets_vector)
-      # feature_vector.append(turn_number)
-      # log.msg(feature_vector)
-      # env_file = "/Users/shreyasi/Desktop/LondonLaw/enviroment.txt"
-      # f = open(env_file, "w")
-      # f.write(str(feature_vector)+"\n\n")
-      # f.close()
+      return feature_vector
 
    def doTurn(self, pawnName):
-
-      pawn = self._pawns[pawnName]
-
-      def cost(ticket_amounts, ticket):
-         if ticket == 'taxi':
-            if ticket_amounts['taxi'] > 2:
-               return 1
-            else:
-               return 2
-         elif ticket == 'bus':
-            if ticket_amounts['bus'] > 2:
-               return 1.2
-            else:
-               return 2
-         elif ticket == 'underground':
-            if ticket_amounts['underground'] > 1:
-               return 3
-            else:
-               return 5
-         elif ticket == 'black':
-            return 1000000
-
-      all_paths = path.cheapest_path(pawn.getLocation(), tickets=pawn._tickets,
-                                      cost=cost)
-      detective_locs = [self._pawns[p].getLocation() for p in self._pawns if p != 'X']
-
-      #log.msg("Detectives Bot")
-      self.generate_feature_space(pawnName)
-
-      if self._turnNum < 3:
-         # Before X has surfaced, just try to get to high-mobility locations.
-         # Compute locations we can get to by the end of turn 2, with the constraint
-         # that we don't spend any undergrounds
-         t = pawn._tickets.copy()
-         t['underground'] = 0
-         e = [sets.Set()] * (3 - self._turnNum)
-         e[0].union_update(detective_locs)
-         locs = list(path.possible_destinations(pawn.getLocation(), 3 - self._turnNum, 
-               tickets=t, eliminate=e))
-         random.shuffle(locs)
-         # evaluate the mobility of each location
-         bestLoc      = None
-         bestMobility = 0
-         for loc in locs:
-            # how well-connected is this location?
-            mobility = len(path.possible_destinations(loc, 1, pawn._tickets))
-            if mobility > bestMobility:
-               bestLoc      = loc
-               bestMobility = mobility
-         if bestLoc != None and all_paths[bestLoc] != None:
-            self.makeMove([pawnName.lower(), str(all_paths[bestLoc][0][0]), all_paths[bestLoc][0][1]])
-            log.msg("Best Move for ", pawnName.lower(), "detective is to", str(all_paths[bestLoc][0][0]), "using", all_paths[bestLoc][0][1])
-         else:
-            # shouldn't happen
-            raise DetectiveSimpleAIProtocolError("failed to find a move for turnNum < 3")
-      else:
-         # after X has surfaced, just try to go somewhere where he *might* be (use game
-         # history to eliminate detective positions as possible locations)
-         lastXLoc = self._history[self._lastXSurfacingTurn]['X'][0]
-         xTransports = []
-         e           = []
-         for i in range(self._lastXSurfacingTurn + 1, self._turnNum + 1):
-            xTransports.append(self._history[i]['X'][1])
-            detPos = []
-            for p in self._pawns:
-               if p != 'X' and p in self._history[i-1].keys():
-                  detPos.append(self._history[i-1][p][0])
-            e.append(sets.Set(detPos))
-         #log.msg('x transports = ' + str(xTransports))
-         xLocs = path.possible_locations(lastXLoc, xTransports, eliminate=e)
-         #log.msg('x possible locations = ' + str(xLocs))
-
-         # determine which of these locations is closest with a path that is
-         # attainable
-         minDist = 1000000
-         bestLoc = None
-         for loc in xLocs:
-            if (all_paths[loc] != None and len(all_paths[loc]) < minDist and
-                  len(all_paths[loc]) > 0 and all_paths[loc][0][0] not in detective_locs):
-               bestLoc = loc
-
-         if bestLoc != None and all_paths[bestLoc] != None:
-            self.makeMove([pawnName.lower(), str(all_paths[bestLoc][0][0]), all_paths[bestLoc][0][1]])
-            log.msg("Best Move for ", pawnName.lower(), "detective is to", str(all_paths[bestLoc][0][0]), "using", all_paths[bestLoc][0][1])
-         else:
-            # if we can't find anything good, make a random move
-            log.msg("moving randomly")
-            availableMoves = list(path.possible_destinations(pawn.getLocation(), 1,
-               tickets=pawn._tickets, eliminate = [sets.Set(detective_locs)]))
-            move = random.choice(availableMoves)
-            self.makeMove([pawnName.lower(), str(all_paths[move][0][0]), all_paths[move][0][1]])
-            log.msg("Best Move for ", pawnName.lower(), "detective is to", str(all_paths[move][0][0]), "using", all_paths[move][0][1])
+      state = self.generate_feature_space(pawnName)
+      bestMove, bestTransport = detectives_dqn.predict_best_move(state)
+      self.makeMove([pawnName.lower(), bestMove, bestTransport)
+      log.msg("Best Move for ", pawnName.lower(), "detective is to", bestMove, "using", bestTransport)
 
 
    def response_ok_tryjoin(self, tag, args):
