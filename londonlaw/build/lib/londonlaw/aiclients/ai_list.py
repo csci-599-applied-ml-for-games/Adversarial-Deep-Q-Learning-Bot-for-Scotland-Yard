@@ -19,9 +19,9 @@
 # algorithms to the list, it would probably be good to order them by level of
 # difficulty.
 
-X_ALGORITHMS         = (("Rather Dumb Mr. X", "x_simple_launcher.py"),)
+X_ALGORITHMS         = (("Rather Dumb Mr. X", "x_simple_launcher.py"),("Deep Q learning Bot for Mr. X", "x_simple_launcher.py"))
 
-DETECTIVE_ALGORITHMS = (("Rather Dumb Detectives", "detective_simple_launcher.py"),)
+DETECTIVE_ALGORITHMS = (("Rather Dumb Detectives", "detective_simple_launcher.py"),("Deep Q learning Bot for Detectives", "detective_simple_launcher.py"))
 
 
 

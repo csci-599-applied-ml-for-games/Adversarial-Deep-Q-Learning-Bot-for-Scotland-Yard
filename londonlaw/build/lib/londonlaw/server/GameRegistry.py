@@ -56,6 +56,7 @@ registry = None
 class GameRegistrySingleton:
    def __init__(self, dbDir):
       dbDir = os.path.normpath(dbDir)
+      print(dbDir)
       if not os.path.isdir(dbDir):
          os.makedirs(dbDir)
 

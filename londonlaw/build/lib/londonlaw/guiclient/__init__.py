@@ -16,10 +16,10 @@
 
 
 import wx as wxversion
-try:
-	wxversion.select("3.0")
-except wxversion.VersionError:
-	wxversion.select("2.8")
+# try:
+# 	wxversion.select("3.0")
+# except wxversion.VersionError:
+# 	wxversion.select("2.8")
 
 import wx
 

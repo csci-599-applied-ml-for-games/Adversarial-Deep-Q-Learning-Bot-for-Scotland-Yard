@@ -165,7 +165,7 @@ class BaseAIProtocol(basic.LineOnlyReceiver):
    def makeMove(self, data):
       # self.getEnivronment()
       self._state = "trymove"
-      log.msg("movAAAAAA data = " + str(data))
+      # log.msg("move data = " + str(data))
       if len(data) == 3:
          self.sendTokens(self.genTag(), "move", data[0], data[1], data[2])
       elif len(data) == 5:

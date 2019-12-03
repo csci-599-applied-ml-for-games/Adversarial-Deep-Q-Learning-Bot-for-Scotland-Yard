@@ -35,21 +35,51 @@ class XSimpleAIProtocol(base.BaseAIProtocol):
       b[np.arange(size), a] = 1
       return b.tolist()
 
+   # def generate_feature_space(self):
+   #    log.msg("generate feature space called")
+   #    mrXLoc = self._pawns['X'].getLocation()
+   #    mrXLoc_vector = self.one_hot_encode([mrXLoc], 1, 199)
+   #    mrXTickets = self._pawns['X']._tickets
+   #    mrXTickets_vector = mrXTickets.values()
+   #    dets      = ['Red', 'Yellow', 'Green', 'Blue', 'Black']
+   #    detLocs   = [self._pawns[d].getLocation() for d in dets]
+   #    detLocs_vector = self.one_hot_encode(detLocs, 5, 199)
+   #    det_tickets = [self._pawns[d]._tickets for d in dets]
+   #    det_tickets_vector = [d.values() for d in det_tickets]
+   #    turn_number = self._turnNum
+   #    # feature_vector = [mrXLoc_vector, mrXTickets_vector, detLocs_vector, det_tickets_vector, turn_number]
+   #    feature_vector = []
+   #    feature_vector.extend(mrXLoc_vector)
+   #    feature_vector.extend(mrXTickets_vector)
+   #    feature_vector.extend(detLocs_vector)
+   #    feature_vector.extend(det_tickets_vector)
+   #    feature_vector.append(turn_number)
+   #    log.msg(feature_vector)
+   #    env_file = "/Users/shreyasi/Desktop/LondonLaw/enviroment.txt"
+   #    f = open(env_file, "w")
+   #    f.write(str(feature_vector)+"\n\n")
+   #    f.close()
+
    def generate_feature_space(self):
       log.msg("generate feature space called")
       mrXLoc = self._pawns['X'].getLocation()
-      mrXLoc_vector = self.one_hot_encode([mrXLoc], 1, 199)
+      #mrXLoc_vector = self.one_hot_encode([mrXLoc], 1, 199)
       mrXTickets = self._pawns['X']._tickets
-      mrXTickets_vector = mrXTickets.values()
+      mrXTickets_vector = list(mrXTickets.values())[-2]
       dets      = ['Red', 'Yellow', 'Green', 'Blue', 'Black']
       detLocs   = [self._pawns[d].getLocation() for d in dets]
-      detLocs_vector = self.one_hot_encode(detLocs, 5, 199)
+      #detLocs_vector = self.one_hot_encode(detLocs, 5, 199)
       det_tickets = [self._pawns[d]._tickets for d in dets]
-      det_tickets_vector = [d.values() for d in det_tickets]
+      det_tickets_vector = [list(d.values())[:3] for d in det_tickets]
       turn_number = self._turnNum
-      feature_vector = [mrXLoc_vector, mrXTickets_vector, detLocs_vector, det_tickets_vector, turn_number]
-      log.msg(feature_vector)
-      self.f.write(str(feature_vector)+"\n\n")
+      feature_vector = [mrXLoc, mrXTickets_vector, detLocs, det_tickets_vector, turn_number]
+      log.msg("Input feature vector: ", feature_vector)
+      # env_file = "/Users/shreyasi/Desktop/work/LondonLaw/env.txt"
+      # move_file = "/Users/shreyasi/Desktop/LondonLaw/move.txt"
+      # self.f = open(env_file, "w")
+      # self.f.write(str(feature_vector)+"\n\n")
+      # self.f.close()
+  
 
    def doTurn(self, pawnName):
 
@@ -71,6 +101,7 @@ class XSimpleAIProtocol(base.BaseAIProtocol):
                                      cost=cost)
 
       # look at the available moves in order from most safe to least safe
+
       safe = self.safeMoves()
       safe.reverse()
       bestMove      = None
@@ -113,12 +144,18 @@ class XSimpleAIProtocol(base.BaseAIProtocol):
       # self.turnNo += 1
       # log.msg("Turn No: "+ str(self.turnNo)+"\n")
       self.generate_feature_space()
+      # log.msg("Mr. x options are: ", self.safeMoves())
+      move_file = "/Users/shreyasi/Desktop/LondonLaw/move.txt"
+      f = open(move_file, "w")
+      f.write(str(bestMove)+" , "+bestTransport+"\n\n")
+      f.close()
+      log.msg("Best move is from: ", self._pawns['X'].getLocation(), "to : ", bestMove, "using: ",  bestTransport)
       self.makeMove(['x', str(bestMove), str(bestTransport)])
-      log.msg("making a move AAAAAAAA" +"\n\n\n") 
+      log.msg("making a move " +"\n\n\n") 
 
    def response_ok_tryjoin(self, tag, args):
       self._state = "trychat"
-      self.sendChat("Loaded \"Simple Mr. X AI\", Copyright 2005 Paul Pelzl.", "all")
+      self.sendChat("Loaded \"Simple Mr. X AI\"", "all")
    
   
 
@@ -135,8 +172,8 @@ class XSimpleAIFactory(base.BaseAIFactory):
 
    def __init__(self, username, gameroom):
       base.BaseAIFactory.__init__(self, username, username, gameroom, "Mr. X")
-      output_file = "/Users/shreyasi/Desktop/LondonLaw/eniviroment.txt"
-      self.f = open(output_file, "a")
+      
+      move_file = "/Users/shreyasi/Desktop/LondonLaw/move.txt"
 
 
 
